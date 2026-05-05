@@ -1,0 +1,89 @@
+{
+  "expo": {
+    "name": "SeekerApp",
+    "slug": "seeker-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "seekerapp",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.seekerapp.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "SeekerApp uses the camera to scan QR codes and check in to events.",
+        "NSLocationWhenInUseUsageDescription": "SeekerApp uses your location to show nearby events and venues.",
+        "NFCReaderUsageDescription": "SeekerApp uses NFC to check in to events.",
+        "NSMicrophoneUsageDescription": "SeekerApp uses the microphone for audio features."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#0f0f1a"
+      },
+      "package": "com.seekerapp.mobile",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.NFC",
+        "android.permission.INTERNET",
+        "android.permission.VIBRATE",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.SCHEDULE_EXACT_ALARM"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "SeekerApp uses the camera to scan QR codes and check in to events."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "SeekerApp uses your location to show nearby events and venues."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#9945FF",
+          "sounds": []
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0f0f1a",
+          "dark": {
+            "backgroundColor": "#0f0f1a",
+            "image": "./assets/images/splash-icon.png"
+          },
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain"
+        }
+      ],
+      "expo-av",
+      "expo-localization",
+      "expo-web-browser"
+    ],
+    "extra": {
+      "solanaEndpoint": "https://api.devnet.solana.com",
+      "solanaCluster": "devnet",
+      "eas": {}
+    }
+  }
+}
