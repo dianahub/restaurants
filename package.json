@@ -47,6 +47,7 @@
   "main": "./index.js",
   "version": "1.0.0",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.94.0",
     "@expo/metro-runtime": "~55.0.6",
     "@expo/vector-icons": "^15.0.3",
     "@metaplex-foundation/js": "^0.20.1",
@@ -73,6 +74,7 @@
     "expo-font": "~55.0.4",
     "expo-haptics": "~55.0.9",
     "expo-image": "^55.0.6",
+    "expo-image-picker": "^55.0.20",
     "expo-linear-gradient": "~55.0.9",
     "expo-linking": "~55.0.8",
     "expo-localization": "^55.0.13",
@@ -105,6 +107,9 @@
     "react-qr-code": "^2.0.16"
   },
   "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1043.0",
+    "@aws-sdk/client-s3": "^3.1043.0",
+    "@aws-sdk/lib-dynamodb": "^3.1043.0",
     "@types/react": "~19.2.14",
     "@vercel/node": "^5.7.15",
     "eslint": "^9.33.0",
