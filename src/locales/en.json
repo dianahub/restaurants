@@ -156,6 +156,26 @@
     "skip": "Skip",
     "alreadyHaveAccount": "Already have an account? Sign In"
   },
+  "verification": {
+    "verifiedBadge": "Verified Seeker",
+    "verifyButton": "Verify Seeker Ownership",
+    "verifyHint": "Hold an SGT to unlock 2x rewards, exclusive events & unlimited chat",
+    "verifying": "Verifying...",
+    "verifySuccess": "Seeker verified! 2x rewards unlocked.",
+    "verifyFailed": "No SGT found in this wallet.",
+    "alreadyClaimed": "This SGT is already linked to another account.",
+    "perks2xTitle": "2× Gold Multiplier",
+    "perks2xDesc": "All rewards doubled for Seeker holders",
+    "perksEventsTitle": "Seeker-Only Events",
+    "perksEventsDesc": "Exclusive events gated to verified Seekers",
+    "perksChatTitle": "Unlimited Chat",
+    "perksChatDesc": "No daily message limit",
+    "chatLimitWarning": "{{remaining}} messages left today",
+    "chatLimitReached": "Daily limit reached — verify your Seeker to unlock unlimited chat",
+    "multiplierActive": "2× active",
+    "seekerExclusiveEvent": "Seeker Exclusive",
+    "lockedForSeekers": "Verify your Seeker to unlock this event"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",

@@ -156,6 +156,26 @@
     "skip": "Omitir",
     "alreadyHaveAccount": "¿Ya tienes una cuenta? Inicia Sesión"
   },
+  "verification": {
+    "verifiedBadge": "Seeker Verificado",
+    "verifyButton": "Verificar Propiedad de Seeker",
+    "verifyHint": "Necesitas un SGT para desbloquear recompensas 2x, eventos exclusivos y chat ilimitado",
+    "verifying": "Verificando...",
+    "verifySuccess": "¡Seeker verificado! Recompensas 2x desbloqueadas.",
+    "verifyFailed": "No se encontró ningún SGT en esta billetera.",
+    "alreadyClaimed": "Este SGT ya está vinculado a otra cuenta.",
+    "perks2xTitle": "Multiplicador de Oro 2×",
+    "perks2xDesc": "Todas las recompensas duplicadas para los Seekers",
+    "perksEventsTitle": "Eventos Solo para Seekers",
+    "perksEventsDesc": "Eventos exclusivos solo para Seekers verificados",
+    "perksChatTitle": "Chat Ilimitado",
+    "perksChatDesc": "Sin límite diario de mensajes",
+    "chatLimitWarning": "{{remaining}} mensajes restantes hoy",
+    "chatLimitReached": "Límite diario alcanzado — verifica tu Seeker para desbloquear chat ilimitado",
+    "multiplierActive": "2× activo",
+    "seekerExclusiveEvent": "Exclusivo Seeker",
+    "lockedForSeekers": "Verifica tu Seeker para desbloquear este evento"
+  },
   "common": {
     "save": "Guardar",
     "cancel": "Cancelar",
