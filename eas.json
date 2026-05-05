@@ -5,7 +5,8 @@
   },
   "build": {
     "base": {
-      "pnpm": "10.12.3"
+      "node": "20.20.2",
+      "npm": "10.8.2"
     },
     "development": {
       "extends": "base",
@@ -14,7 +15,10 @@
     },
     "preview": {
       "extends": "base",
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
     },
     "production": {
       "extends": "base",
