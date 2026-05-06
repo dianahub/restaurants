@@ -7,7 +7,7 @@ const emptyShim = path.resolve(__dirname, "shims/empty.js");
 
 config.resolver.extraNodeModules = {
   assert: require.resolve("assert"),
-  // Node-only modules used by @irys/sdk and other Metaplex transitive deps
+  // Node-only modules used by @irys/sdk, arbundles, and other Metaplex transitive deps
   fs: emptyShim,
   path: emptyShim,
   os: emptyShim,
@@ -17,6 +17,7 @@ config.resolver.extraNodeModules = {
   dns: emptyShim,
   http2: emptyShim,
   stream: emptyShim,
+  "stream/promises": emptyShim,
   zlib: emptyShim,
   http: emptyShim,
   https: emptyShim,
