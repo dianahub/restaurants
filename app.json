@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SeekerApp",
-    "slug": "seeker-app",
+    "slug": "ororewards",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -33,7 +33,9 @@
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT",
         "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.SCHEDULE_EXACT_ALARM"
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "web": {
@@ -83,7 +85,10 @@
     "extra": {
       "solanaEndpoint": "https://api.devnet.solana.com",
       "solanaCluster": "devnet",
-      "eas": {}
-    }
+      "eas": {
+        "projectId": "08ef34b6-86c8-4c23-9610-223c9cf15a29"
+      }
+    },
+    "owner": "futurotek"
   }
 }
