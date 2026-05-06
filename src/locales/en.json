@@ -200,6 +200,20 @@
     "seekerExclusiveEvent": "Seeker Exclusive",
     "lockedForSeekers": "Verify your Seeker to unlock this event"
   },
+  "checkIn": {
+    "scanQR": "Scan QR",
+    "tapNFC": "Tap NFC",
+    "holdNFC": "Hold your phone near the NFC tag",
+    "connectWallet": "Please connect your wallet first",
+    "gpsFailTitle": "Location Error",
+    "gpsFail": "You need to be at the restaurant",
+    "earned": "You earned {{amount}} XAUm! 🥇",
+    "eventBonus": "{{multiplier}}x Gold Event Bonus!",
+    "notifTitle": "Check-in Complete!",
+    "notifBody": "You earned {{amount}} XAUm gold!",
+    "error": "Check-in Failed",
+    "nfcError": "Could not read NFC tag"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",

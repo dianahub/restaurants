@@ -200,6 +200,20 @@
     "seekerExclusiveEvent": "Exclusivo Seeker",
     "lockedForSeekers": "Verifica tu Seeker para desbloquear este evento"
   },
+  "checkIn": {
+    "scanQR": "Escanear QR",
+    "tapNFC": "Toque NFC",
+    "holdNFC": "Acerca tu teléfono a la etiqueta NFC",
+    "connectWallet": "Por favor conecta tu billetera primero",
+    "gpsFailTitle": "Error de Ubicación",
+    "gpsFail": "Debes estar en el restaurante",
+    "earned": "¡Ganaste {{amount}} XAUm! 🥇",
+    "eventBonus": "¡Bono de Oro {{multiplier}}x!",
+    "notifTitle": "¡Check-in Completo!",
+    "notifBody": "¡Ganaste {{amount}} XAUm de oro!",
+    "error": "Check-in Fallido",
+    "nfcError": "No se pudo leer la etiqueta NFC"
+  },
   "common": {
     "save": "Guardar",
     "cancel": "Cancelar",
