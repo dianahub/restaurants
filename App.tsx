@@ -1,43 +1,44 @@
 /**
- * App.tsx — SeekerApp root
+ * App.tsx — Pot of Gold root
  *
  * Provider order (outermost → innermost):
  *   SafeAreaProvider
  *     I18nextProvider        ← translations available everywhere
- *       QueryClientProvider  ← react-query (used by template Solana hooks)
+ *       QueryClientProvider  ← react-query
  *         MobileWalletProvider ← MWA on devnet; Seed Vault on real Seeker
- *           NavigationContainer
- *             MainTabs (5 bottom tabs, labels translated)
+ *           AppContent (onboarding gate + main tabs)
  *
  * On real Seeker hardware: Seed Vault wallet is accessed via MWA automatically.
  * Do NOT use the Seed Vault SDK directly — MWA is the only supported path.
- * For emulator: install Mock MWA Wallet → github.com/solana-mobile/mock-mwa-wallet
  */
 import './src/utils/i18n'; // initialise i18next before any component renders
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 import { I18nextProvider } from 'react-i18next';
 import { useTranslation } from 'react-i18next';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MobileWalletProvider } from '@wallet-ui/react-native-web3js';
-import i18n from './src/utils/i18n';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import i18n, { loadSavedLanguage } from './src/utils/i18n';
 
 import HomeScreen from './src/screens/HomeScreen';
 import NearbyScreen from './src/screens/NearbyScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import WalletScreen from './src/screens/WalletScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import OnboardingScreen from './src/screens/OnboardingScreen';
 import { COLORS } from './src/constants';
 
+const ONBOARDING_KEY = 'pot_of_gold:onboarding_complete';
 const SOLANA_DEVNET_ENDPOINT = 'https://api.devnet.solana.com';
 
 const APP_IDENTITY = {
-  name: 'Seeker App',
+  name: 'Pot of Gold',
   uri: 'https://seekerapp.xyz',
   icon: 'favicon.ico',
 } as const;
@@ -74,8 +75,8 @@ function MainTabs() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#1a1a2e',
-          borderTopColor: '#ffffff1a',
+          backgroundColor: COLORS.surface,
+          borderTopColor: COLORS.border,
           borderTopWidth: 1,
           paddingBottom: 6,
           paddingTop: 6,
@@ -98,6 +99,34 @@ function MainTabs() {
   );
 }
 
+// Handles onboarding gate + language loading before rendering main app
+function AppContent() {
+  // null = still checking, false = show onboarding, true = show app
+  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    Promise.all([
+      AsyncStorage.getItem(ONBOARDING_KEY),
+      loadSavedLanguage(),
+    ]).then(([val]) => {
+      setOnboardingDone(val === 'true');
+    });
+  }, []);
+
+  // Still loading — render nothing (splash screen covers this)
+  if (onboardingDone === null) return <View style={{ flex: 1, backgroundColor: COLORS.background }} />;
+
+  if (!onboardingDone) {
+    return <OnboardingScreen onComplete={() => setOnboardingDone(true)} />;
+  }
+
+  return (
+    <NavigationContainer>
+      <MainTabs />
+    </NavigationContainer>
+  );
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
@@ -108,9 +137,7 @@ export default function App() {
             endpoint={SOLANA_DEVNET_ENDPOINT}
             identity={APP_IDENTITY}
           >
-            <NavigationContainer>
-              <MainTabs />
-            </NavigationContainer>
+            <AppContent />
             <StatusBar style="light" />
           </MobileWalletProvider>
         </QueryClientProvider>

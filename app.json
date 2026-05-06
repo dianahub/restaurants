@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "SeekerApp",
-    "slug": "ororewards",
+    "name": "Pot of Gold",
+    "slug": "pot-of-gold",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

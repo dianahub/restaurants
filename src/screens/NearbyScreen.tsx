@@ -18,6 +18,7 @@ import { useLocation } from '../hooks/useLocation';
 import { useNearbyRestaurants, NearbyRestaurant } from '../hooks/useNearbyRestaurants';
 import { useNearbyEvents, NearbyEvent, EventFilter } from '../hooks/useNearbyEvents';
 import { ellipsify } from '../utils/format';
+import { buildLeaderboard } from '../utils/demo';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -84,21 +85,10 @@ export default function NearbyScreen() {
   // ---------------------------------------------------------------------------
   // Leaderboard entries (derived from walletAddress)
   // ---------------------------------------------------------------------------
-  const leaderboard: LeaderEntry[] = useMemo(
-    () => [
-      { rank: 1, display: 'goldking.skr', xaum: 4250, isMe: false },
-      { rank: 2, display: 'seeker.skr', xaum: 3100, isMe: false },
-      { rank: 3, display: 'diana.skr', xaum: 2890, isMe: false },
-      { rank: 4, display: 'crypto.skr', xaum: 2100, isMe: false },
-      { rank: 5, display: 'nftlover.skr', xaum: 1850, isMe: false },
-      { rank: 6, display: 'solana.skr', xaum: 1320, isMe: false },
-      { rank: 7, display: walletAddress ? ellipsify(walletAddress) : 'You', xaum: 890, isMe: true },
-      { rank: 8, display: 'moon.skr', xaum: 750, isMe: false },
-      { rank: 9, display: 'hodler.skr', xaum: 420, isMe: false },
-      { rank: 10, display: 'newbie.skr', xaum: 180, isMe: false },
-    ],
+  const leaderboard = useMemo(
+    () => buildLeaderboard(walletAddress ? ellipsify(walletAddress) : 'You'),
     [walletAddress],
-  );
+  ) as LeaderEntry[];
 
   // ---------------------------------------------------------------------------
   // Animations

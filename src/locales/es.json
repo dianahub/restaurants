@@ -136,7 +136,11 @@
     "badges": "Insignias",
     "noBadges": "Aún no tienes insignias",
     "memberSince": "Miembro desde {{date}}",
-    "shareProfile": "Compartir Perfil"
+    "shareProfile": "Compartir Perfil",
+    "language": "Idioma",
+    "streak": "Racha de {{count}} días",
+    "rank": "Puesto #{{rank}}",
+    "xaum": "{{amount}} XAUm"
   },
   "events": {
     "rsvp": "Confirmar Asistencia",
@@ -215,7 +219,16 @@
     "getStarted": "Comenzar",
     "next": "Siguiente",
     "skip": "Omitir",
-    "alreadyHaveAccount": "¿Ya tienes una cuenta? Inicia Sesión"
+    "alreadyHaveAccount": "¿Ya tienes una cuenta? Inicia Sesión",
+    "screen1Title": "Bienvenido a Pot of Gold",
+    "screen1Subtitle": "La app que te paga oro real por comer local",
+    "screen2Title": "Gana Oro Real",
+    "screen2Subtitle": "Haz check-in, ve a eventos, gana XAUm — respaldado por oro real",
+    "screen2CTA": "Cómo funciona",
+    "screen3Title": "Conecta Tu Billetera",
+    "screen3Subtitle": "Tu billetera Solana es tu identidad e historial de recompensas",
+    "screen3CTA": "Comenzar a Ganar",
+    "screen3Skip": "Explorar primero"
   },
   "restaurant": {
     "setupTitle": "Gemelo Digital del Restaurante",

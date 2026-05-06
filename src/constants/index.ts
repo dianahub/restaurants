@@ -3,15 +3,16 @@ export * from './solana';
 export const APP_NAME = 'SeekerApp';
 
 export const COLORS = {
-  background: '#0f0f1a',
-  surface: '#1a1a2e',
+  background: '#1A1A2E',
+  surface: '#16213E',
   primary: '#9945FF',
   primaryLight: '#14F195',
-  text: '#ffffff',
-  textMuted: '#9ca3af',
-  border: '#ffffff1a',
+  text: '#FFFFFF',
+  textMuted: '#AAAAAA',
+  border: '#2D2D4E',
   error: '#ef4444',
-  success: '#22c55e',
+  success: '#14F195',
+  gold: '#B8860B',
 } as const;
 
 export const SPACING = {

@@ -136,7 +136,11 @@
     "badges": "Badges",
     "noBadges": "No badges earned yet",
     "memberSince": "Member since {{date}}",
-    "shareProfile": "Share Profile"
+    "shareProfile": "Share Profile",
+    "language": "Language",
+    "streak": "{{count}}-day streak",
+    "rank": "Rank #{{rank}}",
+    "xaum": "{{amount}} XAUm"
   },
   "events": {
     "rsvp": "RSVP",
@@ -215,7 +219,16 @@
     "getStarted": "Get Started",
     "next": "Next",
     "skip": "Skip",
-    "alreadyHaveAccount": "Already have an account? Sign In"
+    "alreadyHaveAccount": "Already have an account? Sign In",
+    "screen1Title": "Welcome to Pot of Gold",
+    "screen1Subtitle": "The app that pays you real gold to eat local",
+    "screen2Title": "Earn Real Gold",
+    "screen2Subtitle": "Check in at restaurants, attend events, earn XAUm — backed by real gold",
+    "screen2CTA": "How it works",
+    "screen3Title": "Connect Your Wallet",
+    "screen3Subtitle": "Your Solana wallet is your identity and rewards history",
+    "screen3CTA": "Start Earning",
+    "screen3Skip": "Explore first"
   },
   "restaurant": {
     "setupTitle": "Restaurant Digital Twin",
