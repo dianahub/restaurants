@@ -56,3 +56,4 @@ app-example
 # logs
 logs/
 *.log
+.env
