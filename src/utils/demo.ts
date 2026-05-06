@@ -3,7 +3,7 @@
  * Provides realistic restaurant, event, leaderboard, and wallet fixture data.
  */
 
-import type { RestaurantNFT } from './digitalTwin';
+import type { RestaurantNFT } from './restaurantData'
 
 // ---------------------------------------------------------------------------
 // Restaurants (Miami Beach, real coordinates)
@@ -105,40 +105,40 @@ export const DEMO_RESTAURANTS: (RestaurantNFT & { distanceKm: number })[] = [
     language_preference: 'es',
     distanceKm: 1.4,
   },
-];
+]
 
 // ---------------------------------------------------------------------------
 // Events
 // ---------------------------------------------------------------------------
 
 export interface DemoEvent {
-  nftAddress: string;
-  name_en: string;
-  name_es: string;
-  restaurantNFT: string;
-  restaurantName_en: string;
-  restaurantName_es: string;
-  lat: number;
-  lng: number;
-  date: string;
-  gold_multiplier: number;
-  ticket_price_sol: number;
-  type: string;
-  totalRsvps: number;
+  nftAddress: string
+  name_en: string
+  name_es: string
+  restaurantNFT: string
+  restaurantName_en: string
+  restaurantName_es: string
+  lat: number
+  lng: number
+  date: string
+  gold_multiplier: number
+  ticket_price_sol: number
+  type: string
+  totalRsvps: number
 }
 
 function todayAt(hour: number, minute = 0): string {
-  const d = new Date();
-  d.setHours(hour, minute, 0, 0);
-  return d.toISOString();
+  const d = new Date()
+  d.setHours(hour, minute, 0, 0)
+  return d.toISOString()
 }
 
 function nextFridayAt(hour: number): string {
-  const d = new Date();
-  const daysUntilFriday = (5 - d.getDay() + 7) % 7 || 7;
-  d.setDate(d.getDate() + daysUntilFriday);
-  d.setHours(hour, 0, 0, 0);
-  return d.toISOString();
+  const d = new Date()
+  const daysUntilFriday = (5 - d.getDay() + 7) % 7 || 7
+  d.setDate(d.getDate() + daysUntilFriday)
+  d.setHours(hour, 0, 0, 0)
+  return d.toISOString()
 }
 
 export const DEMO_EVENTS: DemoEvent[] = [
@@ -172,18 +172,18 @@ export const DEMO_EVENTS: DemoEvent[] = [
     type: 'wine-tasting',
     totalRsvps: 12,
   },
-];
+]
 
 // ---------------------------------------------------------------------------
 // Leaderboard (10 bilingual entries — mix of EN and ES names)
 // ---------------------------------------------------------------------------
 
 export interface LeaderboardEntry {
-  rank: number;
-  display: string;
-  xaum: number;
-  isMe: boolean;
-  flag?: string;
+  rank: number
+  display: string
+  xaum: number
+  isMe: boolean
+  flag?: string
 }
 
 export function buildLeaderboard(walletDisplay: string): LeaderboardEntry[] {
@@ -198,7 +198,7 @@ export function buildLeaderboard(walletDisplay: string): LeaderboardEntry[] {
     { rank: 8, display: 'solana.skr', xaum: 750, isMe: false },
     { rank: 9, display: 'maria_gold.skr', xaum: 420, isMe: false, flag: '🇨🇺' },
     { rank: 10, display: 'hodler.skr', xaum: 180, isMe: false },
-  ];
+  ]
 }
 
 // ---------------------------------------------------------------------------
@@ -215,4 +215,4 @@ export const DEMO_WALLET = {
   points: 2890,
   ticketNFTs: 3,
   goldPrice: 3046, // USD per troy oz
-} as const;
+} as const
