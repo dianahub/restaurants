@@ -6,7 +6,7 @@ const config = getDefaultConfig(__dirname);
 const emptyShim = path.resolve(__dirname, "shims/empty.js");
 
 config.resolver.extraNodeModules = {
-  assert: require.resolve("assert"),
+  assert: path.resolve(__dirname, "node_modules/assert"),
   // Node-only modules used by @irys/sdk, arbundles, and other Metaplex transitive deps
   fs: emptyShim,
   path: emptyShim,
