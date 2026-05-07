@@ -205,7 +205,7 @@ export default function ChatScreen() {
 
   // Build chat context from current app state (mock data for unimplemented fields)
   const buildContext = useCallback((): ChatContext => ({
-    walletAddress: account?.address?.toString() ?? null,
+    walletAddress: account?.address?.toString() ?? 'Demo User',
     skrDomain,
     language: userLanguage,
     xaumBalance: 0,

@@ -5,30 +5,42 @@ const config = getDefaultConfig(__dirname);
 
 const emptyShim = path.resolve(__dirname, "shims/empty.js");
 
-config.resolver.extraNodeModules = {
-  assert: path.resolve(__dirname, "node_modules/assert"),
-  // Node-only modules used by @irys/sdk, arbundles, and other Metaplex transitive deps
-  fs: emptyShim,
-  path: emptyShim,
-  os: emptyShim,
-  net: emptyShim,
-  tls: emptyShim,
-  child_process: emptyShim,
-  dns: emptyShim,
-  http2: emptyShim,
-  stream: emptyShim,
-  "stream/promises": emptyShim,
-  zlib: emptyShim,
-  http: emptyShim,
-  https: emptyShim,
-  crypto: emptyShim,
-  readline: emptyShim,
-  worker_threads: emptyShim,
-  cluster: emptyShim,
-  dgram: emptyShim,
-  "csv-parse": emptyShim,
-  "csv-stringify": emptyShim,
-  inquirer: emptyShim,
+// Node.js core modules and packages that don't exist in React Native
+const shimmedModules = new Set([
+  "assert",
+  "child_process",
+  "cluster",
+  "crypto",
+  "csv-parse",
+  "csv-stringify",
+  "dgram",
+  "dns",
+  "fs",
+  "http",
+  "http2",
+  "https",
+  "inquirer",
+  "net",
+  "os",
+  "path",
+  "readline",
+  "stream",
+  "stream/promises",
+  "tls",
+  "worker_threads",
+  "zlib",
+]);
+
+const originalResolveRequest = config.resolver.resolveRequest;
+
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (shimmedModules.has(moduleName)) {
+    return { type: "sourceFile", filePath: emptyShim };
+  }
+  if (originalResolveRequest) {
+    return originalResolveRequest(context, moduleName, platform);
+  }
+  return context.resolveRequest(context, moduleName, platform);
 };
 
 module.exports = config;
