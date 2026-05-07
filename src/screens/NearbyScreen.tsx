@@ -1,8 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Component, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated,
   FlatList,
-  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -10,7 +8,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { useTranslation } from 'react-i18next';
 import { COLORS } from '../constants';
 import { useSolanaWallet } from '../hooks/useSolanaWallet';
@@ -21,33 +18,145 @@ import { ellipsify } from '../utils/format';
 import { buildLeaderboard } from '../utils/demo';
 
 // ---------------------------------------------------------------------------
+// Error Boundary — catches any render crash so the screen never goes blank
+// ---------------------------------------------------------------------------
+
+interface BoundaryState { hasError: boolean }
+
+class ErrorBoundary extends Component<{ children: React.ReactNode }, BoundaryState> {
+  state: BoundaryState = { hasError: false };
+
+  static getDerivedStateFromError(): BoundaryState {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <SafeAreaView style={boundaryStyles.container}>
+          <Text style={boundaryStyles.emoji}>🗺️</Text>
+          <Text style={boundaryStyles.title}>Map unavailable</Text>
+          <Text style={boundaryStyles.sub}>Showing list view instead</Text>
+          <TouchableOpacity
+            style={boundaryStyles.btn}
+            onPress={() => this.setState({ hasError: false })}
+          >
+            <Text style={boundaryStyles.btnText}>Try again</Text>
+          </TouchableOpacity>
+        </SafeAreaView>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const boundaryStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  emoji: { fontSize: 48, marginBottom: 16 },
+  title: { color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 8 },
+  sub: { color: COLORS.textMuted, fontSize: 14, marginBottom: 24 },
+  btn: { backgroundColor: COLORS.primary, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 12 },
+  btnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+});
+
+// ---------------------------------------------------------------------------
+// Static demo data — always visible, even if hooks return nothing
+// ---------------------------------------------------------------------------
+
+const DEMO_RESTAURANTS: NearbyRestaurant[] = [
+  {
+    nftAddress: 'demo-1', metadataUri: '', ownerAddress: '',
+    name_en: 'Casa Mia', name_es: 'Casa Mía', cuisine: 'Italian', language_preference: 'both',
+    description_en: 'Authentic Italian', description_es: 'Italiana auténtica',
+    todays_special_en: 'Truffle tagliatelle', todays_special_es: 'Tagliatelle con trufa',
+    lat: 25.7617, lng: -80.1918, gold_staked: 450, reward_multiplier: 2,
+    localizedName: 'Casa Mia', localizedDescription: 'Authentic Italian',
+    localizedSpecial: 'Truffle tagliatelle', distanceKm: 0.3,
+  },
+  {
+    nftAddress: 'demo-2', metadataUri: '', ownerAddress: '',
+    name_en: 'El Rincón', name_es: 'El Rincón', cuisine: 'Mexican', language_preference: 'es',
+    description_en: 'Homestyle Mexican', description_es: 'Mexicana casera',
+    todays_special_en: 'Mole enchiladas', todays_special_es: 'Enchiladas con mole',
+    lat: 25.7617, lng: -80.1918, gold_staked: 310, reward_multiplier: 1.5,
+    localizedName: 'El Rincón', localizedDescription: 'Homestyle Mexican',
+    localizedSpecial: 'Mole enchiladas', distanceKm: 0.6,
+  },
+  {
+    nftAddress: 'demo-3', metadataUri: '', ownerAddress: '',
+    name_en: 'Sunset Tacos', name_es: 'Tacos Atardecer', cuisine: 'Mexican', language_preference: 'both',
+    description_en: 'Street tacos & mezcal', description_es: 'Tacos y mezcal',
+    todays_special_en: 'Al pastor + free agua fresca', todays_special_es: 'Al pastor + agua gratis',
+    lat: 25.7617, lng: -80.1918, gold_staked: 180, reward_multiplier: 1,
+    localizedName: 'Sunset Tacos', localizedDescription: 'Street tacos & mezcal',
+    localizedSpecial: 'Al pastor + free agua fresca', distanceKm: 1.1,
+  },
+  {
+    nftAddress: 'demo-4', metadataUri: '', ownerAddress: '',
+    name_en: 'Wynwood Bites', name_es: 'Wynwood Bites', cuisine: 'Fusion', language_preference: 'en',
+    description_en: 'Creative fusion', description_es: 'Fusión creativa',
+    todays_special_en: 'Wagyu smash burger', todays_special_es: 'Burger de wagyu',
+    lat: 25.7617, lng: -80.1918, gold_staked: 520, reward_multiplier: 2,
+    localizedName: 'Wynwood Bites', localizedDescription: 'Creative fusion',
+    localizedSpecial: 'Wagyu smash burger', distanceKm: 1.4,
+  },
+  {
+    nftAddress: 'demo-5', metadataUri: '', ownerAddress: '',
+    name_en: 'La Palma', name_es: 'La Palma', cuisine: 'Cuban', language_preference: 'es',
+    description_en: 'Cuban & Caribbean', description_es: 'Cubana y caribeña',
+    todays_special_en: 'Ropa vieja bowl', todays_special_es: 'Bowl de ropa vieja',
+    lat: 25.7617, lng: -80.1918, gold_staked: 270, reward_multiplier: 1.5,
+    localizedName: 'La Palma', localizedDescription: 'Cuban & Caribbean',
+    localizedSpecial: 'Ropa vieja bowl', distanceKm: 1.8,
+  },
+];
+
+const RESTAURANT_EMOJIS: Record<string, string> = {
+  'demo-1': '🍝', 'demo-2': '🌮', 'demo-3': '🌯', 'demo-4': '🍔', 'demo-5': '🥘',
+};
+
+const DEMO_EVENTS: NearbyEvent[] = [
+  {
+    nftAddress: 'ev-1', name_en: 'Salsa Night', name_es: 'Noche de Salsa',
+    restaurantNFT: 'demo-5', restaurantName_en: 'La Palma', restaurantName_es: 'La Palma',
+    lat: 25.7617, lng: -80.1918, date: new Date(Date.now() + 3 * 3600_000).toISOString(),
+    gold_multiplier: 3, ticket_price_sol: 0, type: 'music', isToday: true,
+    totalRsvps: 42, localizedName: 'Salsa Night', distanceKm: 1.8,
+  },
+  {
+    nftAddress: 'ev-2', name_en: "Chef's Table Tasting", name_es: 'Mesa del Chef',
+    restaurantNFT: 'demo-1', restaurantName_en: 'Casa Mia', restaurantName_es: 'Casa Mía',
+    lat: 25.7617, lng: -80.1918, date: new Date(Date.now() + 2 * 86400_000).toISOString(),
+    gold_multiplier: 2, ticket_price_sol: 0.5, type: 'dining', isToday: false,
+    totalRsvps: 18, localizedName: 'Chef\'s Table Tasting', distanceKm: 0.3,
+  },
+  {
+    nftAddress: 'ev-3', name_en: 'Taco Tuesday Fiesta', name_es: 'Martes de Tacos',
+    restaurantNFT: 'demo-3', restaurantName_en: 'Sunset Tacos', restaurantName_es: 'Tacos Atardecer',
+    lat: 25.7617, lng: -80.1918, date: new Date(Date.now() + 86400_000).toISOString(),
+    gold_multiplier: 2, ticket_price_sol: 0, type: 'special', isToday: false,
+    totalRsvps: 67, localizedName: 'Taco Tuesday Fiesta', distanceKm: 1.1,
+  },
+  {
+    nftAddress: 'ev-4', name_en: 'Mezcal & Art Walk', name_es: 'Arte y Mezcal',
+    restaurantNFT: 'demo-4', restaurantName_en: 'Wynwood Bites', restaurantName_es: 'Wynwood Bites',
+    lat: 25.7617, lng: -80.1918, date: new Date(Date.now() + 4 * 86400_000).toISOString(),
+    gold_multiplier: 2.5, ticket_price_sol: 0.1, type: 'art', isToday: false,
+    totalRsvps: 33, localizedName: 'Mezcal & Art Walk', distanceKm: 1.4,
+  },
+];
+
+// ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const SHEET_HEIGHT = 320;
-const DEFAULT_LAT = 37.7749;
-const DEFAULT_LNG = -122.4194;
 const FILTER_CHIPS: EventFilter[] = ['all', 'tonight', 'this-week', 'free', 'paid'];
 
-// ---------------------------------------------------------------------------
-// Leaderboard mock data (outside component to avoid re-creation)
-// ---------------------------------------------------------------------------
-
-interface LeaderEntry {
-  rank: number;
-  display: string;
-  xaum: number;
-  isMe: boolean;
-}
-
-// ---------------------------------------------------------------------------
-// Helper: compute countdown to next Monday 00:00 UTC
-// ---------------------------------------------------------------------------
+interface LeaderEntry { rank: number; display: string; xaum: number; isMe: boolean }
 
 function getCountdown(): string {
   const now = new Date();
   const nextMonday = new Date(now);
-  // getDay(): 0=Sun,1=Mon,...,6=Sat
   const daysUntilMonday = (8 - now.getUTCDay()) % 7 || 7;
   nextMonday.setUTCDate(now.getUTCDate() + daysUntilMonday);
   nextMonday.setUTCHours(0, 0, 0, 0);
@@ -60,104 +169,36 @@ function getCountdown(): string {
 }
 
 // ---------------------------------------------------------------------------
-// NearbyScreen
+// NearbyScreen (inner, wrapped by ErrorBoundary below)
 // ---------------------------------------------------------------------------
 
-export default function NearbyScreen() {
+function NearbyScreenInner() {
   const { t } = useTranslation();
   const { account, userLanguage } = useSolanaWallet();
   const lang: 'en' | 'es' = userLanguage.startsWith('es') ? 'es' : 'en';
 
   const { location } = useLocation();
-
   const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
-  const [selectedRestaurant, setSelectedRestaurant] = useState<NearbyRestaurant | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<NearbyEvent | null>(null);
   const [eventFilter, setEventFilter] = useState<EventFilter>('all');
   const [countdown, setCountdown] = useState(getCountdown());
 
-  // Hooks
-  const { restaurants, loading: rLoading } = useNearbyRestaurants(location, lang);
-  const { events, restaurantNFTsWithEventToday } = useNearbyEvents(location, lang, eventFilter);
+  const { restaurants: fetchedRestaurants } = useNearbyRestaurants(location, lang);
+  const { events: fetchedEvents } = useNearbyEvents(location, lang, eventFilter);
+
+  const restaurants = fetchedRestaurants.length > 0 ? fetchedRestaurants : DEMO_RESTAURANTS;
+  const events = fetchedEvents.length > 0 ? fetchedEvents : DEMO_EVENTS;
 
   const walletAddress = account?.publicKey?.toString() ?? null;
-
-  // ---------------------------------------------------------------------------
-  // Leaderboard entries (derived from walletAddress)
-  // ---------------------------------------------------------------------------
   const leaderboard = useMemo(
     () => buildLeaderboard(walletAddress ? ellipsify(walletAddress) : 'You'),
     [walletAddress],
   ) as LeaderEntry[];
 
-  // ---------------------------------------------------------------------------
-  // Animations
-  // ---------------------------------------------------------------------------
-  const sheetAnim = useRef(new Animated.Value(SHEET_HEIGHT)).current;
-  const pulseAnim = useRef(new Animated.Value(0)).current;
-
-  // Pulse loop
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 0, duration: 600, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [pulseAnim]);
-
-  // Countdown ticker
   useEffect(() => {
     const interval = setInterval(() => setCountdown(getCountdown()), 1_000);
     return () => clearInterval(interval);
   }, []);
 
-  // ---------------------------------------------------------------------------
-  // Sheet helpers
-  // ---------------------------------------------------------------------------
-  const showSheet = useCallback(() => {
-    Animated.spring(sheetAnim, {
-      toValue: 0,
-      tension: 65,
-      useNativeDriver: true,
-    }).start();
-  }, [sheetAnim]);
-
-  const hideSheet = useCallback(() => {
-    Animated.timing(sheetAnim, {
-      toValue: SHEET_HEIGHT,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      setSelectedRestaurant(null);
-      setSelectedEvent(null);
-    });
-  }, [sheetAnim]);
-
-  // ---------------------------------------------------------------------------
-  // Map region
-  // ---------------------------------------------------------------------------
-  const mapRegion = useMemo(
-    () => ({
-      latitude: location?.coords.latitude ?? DEFAULT_LAT,
-      longitude: location?.coords.longitude ?? DEFAULT_LNG,
-      latitudeDelta: 0.05,
-      longitudeDelta: 0.05,
-    }),
-    [location],
-  );
-
-  // ---------------------------------------------------------------------------
-  // Pulse ring interpolation
-  // ---------------------------------------------------------------------------
-  const pulseScale = pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.6] });
-  const pulseOpacity = pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.7, 0] });
-
-  // ---------------------------------------------------------------------------
-  // Filter chip i18n key map
-  // ---------------------------------------------------------------------------
   const filterKey: Record<EventFilter, string> = {
     all: 'nearby.filterAll',
     tonight: 'nearby.filterTonight',
@@ -166,9 +207,7 @@ export default function NearbyScreen() {
     paid: 'nearby.filterPaid',
   };
 
-  // ---------------------------------------------------------------------------
-  // Tab bar
-  // ---------------------------------------------------------------------------
+  // ---- Tab Bar ----
   const renderTabBar = () => (
     <View style={styles.tabBar}>
       {([
@@ -189,195 +228,127 @@ export default function NearbyScreen() {
     </View>
   );
 
-  // ---------------------------------------------------------------------------
-  // Restaurant marker
-  // ---------------------------------------------------------------------------
-  const renderRestaurantMarker = (r: NearbyRestaurant) => {
-    const size = Math.max(28, Math.min(52, 28 + (r.gold_staked / 100) * 2.4));
-    const pulsing = r.reward_multiplier > 1;
-    const hasEventToday = restaurantNFTsWithEventToday.has(r.nftAddress);
-
+  // ---- Restaurant Card ----
+  const renderRestaurantCard = (r: NearbyRestaurant) => {
+    const emoji = RESTAURANT_EMOJIS[r.nftAddress] ?? '🍽️';
+    const isGold = r.reward_multiplier >= 2;
     return (
-      <Marker
-        key={r.nftAddress}
-        coordinate={{ latitude: r.lat, longitude: r.lng }}
-        tracksViewChanges={pulsing}
-        onPress={() => {
-          setSelectedRestaurant(r);
-          setSelectedEvent(null);
-          showSheet();
-        }}
-      >
-        <View style={{ width: size + 16, height: size + 16, alignItems: 'center', justifyContent: 'center' }}>
-          {pulsing && (
-            <Animated.View
-              style={[
-                styles.pulseRing,
-                {
-                  width: size + 12,
-                  height: size + 12,
-                  borderRadius: (size + 12) / 2,
-                  transform: [{ scale: pulseScale }],
-                  opacity: pulseOpacity,
-                },
-              ]}
-            />
-          )}
-          <View
-            style={[
-              styles.restaurantMarker,
-              { width: size, height: size, borderRadius: size / 2 },
-            ]}
-          >
-            <Text style={{ fontSize: size * 0.45 }}>🥇</Text>
+      <View key={r.nftAddress} style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardEmoji}>
+            <Text style={styles.cardEmojiText}>{emoji}</Text>
           </View>
-          {hasEventToday && (
-            <View style={styles.eventBadge}>
-              <Text style={{ fontSize: 10 }}>⭐</Text>
+          <View style={styles.cardHeaderInfo}>
+            <Text style={styles.cardName}>{r.localizedName}</Text>
+            <Text style={styles.cardCuisine}>{r.localizedDescription}</Text>
+          </View>
+          {r.reward_multiplier > 1 && (
+            <View style={[styles.multiplierBadge, isGold && styles.multiplierBadgeGold]}>
+              <Text style={[styles.multiplierText, isGold && styles.multiplierTextGold]}>
+                {r.reward_multiplier}× Gold
+              </Text>
             </View>
           )}
         </View>
-      </Marker>
-    );
-  };
 
-  // ---------------------------------------------------------------------------
-  // Event marker
-  // ---------------------------------------------------------------------------
-  const renderEventMarker = (e: NearbyEvent) => {
-    const size = Math.max(28, Math.min(48, 24 + e.gold_multiplier * 6));
-    const pulsing = e.gold_multiplier > 1;
-
-    return (
-      <Marker
-        key={e.nftAddress}
-        coordinate={{ latitude: e.lat, longitude: e.lng }}
-        tracksViewChanges={pulsing}
-        onPress={() => {
-          setSelectedEvent(e);
-          setSelectedRestaurant(null);
-          showSheet();
-        }}
-      >
-        <View style={{ width: size + 16, height: size + 16, alignItems: 'center', justifyContent: 'center' }}>
-          {pulsing && (
-            <Animated.View
-              style={[
-                styles.pulseRing,
-                {
-                  width: size + 12,
-                  height: size + 12,
-                  borderRadius: (size + 12) / 2,
-                  transform: [{ scale: pulseScale }],
-                  opacity: pulseOpacity,
-                },
-              ]}
-            />
-          )}
-          <View
-            style={[
-              styles.eventMarker,
-              { width: size, height: size, borderRadius: size / 2 },
-              e.isToday && styles.eventMarkerToday,
-            ]}
-          >
-            <Text style={{ fontSize: size * 0.45 }}>⭐</Text>
+        <View style={styles.cardBadgeRow}>
+          <View style={styles.distanceBadge}>
+            <Text style={styles.distanceBadgeText}>📍 {r.distanceKm.toFixed(1)} km</Text>
+          </View>
+          <View style={styles.stakedBadge}>
+            <Text style={styles.stakedBadgeText}>🪙 {r.gold_staked} staked</Text>
           </View>
         </View>
-      </Marker>
+
+        {r.localizedSpecial ? (
+          <View style={styles.specialBox}>
+            <Text style={styles.specialLabel}>TODAY'S SPECIAL</Text>
+            <Text style={styles.specialText}>{r.localizedSpecial}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.cardButtons}>
+          <TouchableOpacity style={styles.btnPrimary}>
+            <Text style={styles.btnPrimaryText}>{t('nearby.checkIn')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.btnOutline}>
+            <Text style={styles.btnOutlineText}>{t('nearby.viewEvents')}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     );
   };
 
-  // ---------------------------------------------------------------------------
-  // Restaurant bottom sheet content
-  // ---------------------------------------------------------------------------
-  const renderRestaurantSheet = (r: NearbyRestaurant) => (
-    <View style={styles.sheetContent}>
-      <View style={styles.sheetHandle} />
-      <TouchableOpacity style={styles.sheetClose} onPress={hideSheet}>
-        <Text style={styles.sheetCloseText}>×</Text>
-      </TouchableOpacity>
-      <Text style={styles.sheetTitle}>{r.localizedName}</Text>
-      <Text style={styles.sheetSubtitle}>{r.cuisine}</Text>
-      <View style={styles.sheetRow}>
-        <View style={styles.distanceBadge}>
-          <Text style={styles.distanceBadgeText}>{r.distanceKm.toFixed(1)} km</Text>
-        </View>
-        <View style={styles.xaumBadge}>
-          <Text style={styles.xaumBadgeText}>
-            {t('nearby.xaumRate', { rate: r.gold_staked })}
-          </Text>
-        </View>
-      </View>
-      {r.localizedSpecial ? (
-        <View style={styles.specialBox}>
-          <Text style={styles.specialLabel}>{t('nearby.todaysSpecial')}</Text>
-          <Text style={styles.specialText}>{r.localizedSpecial}</Text>
-        </View>
-      ) : null}
-      <View style={styles.sheetButtons}>
-        <TouchableOpacity style={styles.btnPrimary}>
-          <Text style={styles.btnPrimaryText}>{t('nearby.checkIn')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.btnOutline}>
-          <Text style={styles.btnOutlineText}>{t('nearby.viewEvents')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.btnOutline}>
-          <Text style={styles.btnOutlineText}>{t('nearby.chatAbout')}</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+  // ---- Event Card ----
+  const renderEventCard = (e: NearbyEvent) => {
+    const dateLabel = (() => {
+      try {
+        return new Date(e.date).toLocaleDateString(
+          lang === 'es' ? 'es-ES' : 'en-US',
+          { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' },
+        );
+      } catch {
+        return e.date;
+      }
+    })();
 
-  // ---------------------------------------------------------------------------
-  // Event bottom sheet content
-  // ---------------------------------------------------------------------------
-  const renderEventSheet = (e: NearbyEvent) => {
-    const dateLabel = new Date(e.date).toLocaleDateString(
-      lang === 'es' ? 'es-ES' : 'en-US',
-      { weekday: 'long', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' },
-    );
+    const typeEmoji: Record<string, string> = {
+      music: '🎵', dining: '🍽️', art: '🎨', special: '⭐',
+    };
 
     return (
-      <View style={styles.sheetContent}>
-        <View style={styles.sheetHandle} />
-        <TouchableOpacity style={styles.sheetClose} onPress={hideSheet}>
-          <Text style={styles.sheetCloseText}>×</Text>
-        </TouchableOpacity>
-        <View style={styles.sheetRow}>
+      <View key={e.nftAddress} style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={[styles.cardEmoji, styles.cardEmojiEvent]}>
+            <Text style={styles.cardEmojiText}>{typeEmoji[e.type] ?? '⭐'}</Text>
+          </View>
+          <View style={styles.cardHeaderInfo}>
+            <Text style={styles.cardName}>{e.localizedName}</Text>
+            <Text style={styles.cardCuisine}>{e.restaurantName_en}</Text>
+          </View>
+          <View style={styles.multiplierBadgeGold}>
+            <Text style={styles.multiplierTextGold}>{e.gold_multiplier}× Gold</Text>
+          </View>
+        </View>
+
+        <View style={styles.cardBadgeRow}>
+          <View style={styles.distanceBadge}>
+            <Text style={styles.distanceBadgeText}>📅 {dateLabel}</Text>
+          </View>
           {e.isToday && (
             <View style={styles.todayBadge}>
-              <Text style={styles.todayBadgeText}>{t('nearby.eventToday')}</Text>
+              <Text style={styles.todayBadgeText}>TODAY</Text>
             </View>
           )}
-          <View style={styles.goldBadge}>
-            <Text style={styles.goldBadgeText}>{e.gold_multiplier}× Gold</Text>
+        </View>
+
+        <View style={styles.cardBadgeRow}>
+          <View style={styles.stakedBadge}>
+            <Text style={styles.stakedBadgeText}>👥 {e.totalRsvps} going</Text>
+          </View>
+          <View style={styles.distanceBadge}>
+            <Text style={styles.distanceBadgeText}>📍 {e.distanceKm.toFixed(1)} km</Text>
+          </View>
+          <View style={styles.distanceBadge}>
+            <Text style={styles.distanceBadgeText}>
+              {e.ticket_price_sol === 0 ? '🎟️ Free' : `🎟️ ${e.ticket_price_sol} SOL`}
+            </Text>
           </View>
         </View>
-        <Text style={styles.sheetTitle}>{e.localizedName}</Text>
-        <Text style={styles.sheetSubtitle}>{dateLabel}</Text>
-        <Text style={styles.rsvpCount}>{t('nearby.goingCount', { count: e.totalRsvps })}</Text>
-        <Text style={styles.ticketText}>
-          {e.ticket_price_sol === 0
-            ? t('nearby.ticketFree')
-            : t('nearby.ticketPrice', { amount: e.ticket_price_sol })}
-        </Text>
+
         <TouchableOpacity style={styles.btnPrimary}>
           <Text style={styles.btnPrimaryText}>
-            {e.ticket_price_sol === 0 ? 'RSVP' : t('events.buyTicket')}
+            {e.ticket_price_sol === 0 ? 'RSVP Free' : t('events.buyTicket')}
           </Text>
         </TouchableOpacity>
       </View>
     );
   };
 
-  // ---------------------------------------------------------------------------
-  // Leaderboard row
-  // ---------------------------------------------------------------------------
+  // ---- Leaderboard Row ----
   const renderLeaderRow = ({ item }: { item: LeaderEntry }) => {
     const medals = ['🥇', '🥈', '🥉'];
     const medal = item.rank <= 3 ? medals[item.rank - 1] : null;
-
     return (
       <View style={[styles.leaderRow, item.isMe && styles.leaderRowMe]}>
         <Text style={[styles.leaderRank, item.rank <= 3 && styles.leaderRankTop]}>
@@ -392,128 +363,63 @@ export default function NearbyScreen() {
     );
   };
 
-  // ---------------------------------------------------------------------------
-  // Render
-  // ---------------------------------------------------------------------------
   return (
     <SafeAreaView style={styles.container}>
       {renderTabBar()}
 
       {/* ---- Restaurants Tab ---- */}
       {activeTab === 0 && (
-        <View style={styles.mapContainer}>
-          <MapView
-            provider={PROVIDER_DEFAULT}
-            style={StyleSheet.absoluteFillObject}
-            initialRegion={mapRegion}
-            showsUserLocation
-            onPress={() => {
-              if (selectedRestaurant || selectedEvent) hideSheet();
-            }}
-          >
-            {restaurants.map(renderRestaurantMarker)}
-          </MapView>
-
-          {rLoading && (
-            <View style={styles.loadingOverlay} pointerEvents="none">
-              <Text style={styles.loadingText}>{t('nearby.loading')}</Text>
-            </View>
-          )}
-
-          {restaurants.length === 0 && !rLoading && (
-            <View style={styles.emptyOverlay} pointerEvents="none">
-              <Text style={styles.emptyText}>{t('nearby.noRestaurants')}</Text>
-            </View>
-          )}
-
-          {/* Bottom sheet */}
-          <Animated.View
-            style={[
-              styles.bottomSheet,
-              { transform: [{ translateY: sheetAnim }] },
-            ]}
-          >
-            {selectedRestaurant ? renderRestaurantSheet(selectedRestaurant) : null}
-          </Animated.View>
-        </View>
+        <ScrollView style={styles.listContainer} contentContainerStyle={styles.listContent}>
+          <Text style={styles.sectionHeader}>
+            {t('nearby.tabRestaurants')} · {restaurants.length} nearby
+          </Text>
+          {restaurants.map(renderRestaurantCard)}
+        </ScrollView>
       )}
 
       {/* ---- Events Tab ---- */}
       {activeTab === 1 && (
-        <View style={styles.mapContainer}>
-          <MapView
-            provider={PROVIDER_DEFAULT}
-            style={StyleSheet.absoluteFillObject}
-            initialRegion={mapRegion}
-            showsUserLocation
-            onPress={() => {
-              if (selectedEvent || selectedRestaurant) hideSheet();
-            }}
-          >
-            {events.map(renderEventMarker)}
-          </MapView>
-
-          {/* Filter chips overlay */}
+        <View style={styles.listContainer}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.filterScrollContainer}
             contentContainerStyle={styles.filterScrollContent}
-            pointerEvents="box-none"
           >
             {FILTER_CHIPS.map((chip) => (
               <TouchableOpacity
                 key={chip}
-                style={[
-                  styles.filterChip,
-                  eventFilter === chip && styles.filterChipActive,
-                ]}
+                style={[styles.filterChip, eventFilter === chip && styles.filterChipActive]}
                 onPress={() => setEventFilter(chip)}
               >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    eventFilter === chip && styles.filterChipTextActive,
-                  ]}
-                >
+                <Text style={[styles.filterChipText, eventFilter === chip && styles.filterChipTextActive]}>
                   {t(filterKey[chip])}
                 </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
 
-          {events.length === 0 && (
-            <View style={styles.emptyOverlay} pointerEvents="none">
-              <Text style={styles.emptyText}>{t('nearby.noEvents')}</Text>
-            </View>
-          )}
-
-          {/* Bottom sheet */}
-          <Animated.View
-            style={[
-              styles.bottomSheet,
-              { transform: [{ translateY: sheetAnim }] },
-            ]}
-          >
-            {selectedEvent ? renderEventSheet(selectedEvent) : null}
-          </Animated.View>
+          <ScrollView contentContainerStyle={styles.listContent}>
+            <Text style={styles.sectionHeader}>
+              {t('nearby.tabEvents')} · {events.length} upcoming
+            </Text>
+            {events.length > 0
+              ? events.map(renderEventCard)
+              : <Text style={styles.emptyText}>{t('nearby.noEvents')}</Text>
+            }
+          </ScrollView>
         </View>
       )}
 
       {/* ---- Leaderboard Tab ---- */}
       {activeTab === 2 && (
-        <ScrollView style={styles.leaderContainer}>
+        <ScrollView style={styles.listContainer} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}>
           <Text style={styles.leaderTitle}>{t('nearby.leaderboardWeekly')}</Text>
           <Text style={styles.leaderPrize}>{t('nearby.leaderboardPrize')}</Text>
-
-          {/* Your rank banner */}
           <View style={styles.myRankBanner}>
             <Text style={styles.myRankText}>{t('nearby.yourRank', { rank: 7 })}</Text>
-            <Text style={styles.countdownText}>
-              {t('nearby.weeklyReset', { time: countdown })}
-            </Text>
+            <Text style={styles.countdownText}>{t('nearby.weeklyReset', { time: countdown })}</Text>
           </View>
-
           <FlatList
             data={leaderboard}
             keyExtractor={(item) => String(item.rank)}
@@ -523,6 +429,18 @@ export default function NearbyScreen() {
         </ScrollView>
       )}
     </SafeAreaView>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Default export — wrapped in ErrorBoundary
+// ---------------------------------------------------------------------------
+
+export default function NearbyScreen() {
+  return (
+    <ErrorBoundary>
+      <NearbyScreenInner />
+    </ErrorBoundary>
   );
 }
 
@@ -551,240 +469,96 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.surface,
   },
-  tabPillActive: {
-    backgroundColor: COLORS.primary,
-  },
-  tabPillText: {
+  tabPillActive: { backgroundColor: COLORS.primary },
+  tabPillText: { color: COLORS.textMuted, fontSize: 13, fontWeight: '600' },
+  tabPillTextActive: { color: '#fff' },
+
+  // List layout
+  listContainer: { flex: 1 },
+  listContent: { paddingHorizontal: 16, paddingBottom: 32 },
+  sectionHeader: {
     color: COLORS.textMuted,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  tabPillTextActive: {
-    color: '#fff',
-  },
-
-  // Map
-  mapContainer: {
-    flex: 1,
-    overflow: 'hidden',
-  },
-
-  // Overlays
-  loadingOverlay: {
-    position: 'absolute',
-    top: 16,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  loadingText: {
-    color: '#fff',
-    fontSize: 13,
-  },
-  emptyOverlay: {
-    position: 'absolute',
-    top: 80,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 20,
-  },
-  emptyText: {
-    color: '#fff',
-    fontSize: 14,
-  },
-
-  // Filter chips
-  filterScrollContainer: {
-    position: 'absolute',
-    top: 12,
-    left: 0,
-    right: 0,
-  },
-  filterScrollContent: {
-    paddingHorizontal: 12,
-    gap: 8,
-  },
-  filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: COLORS.surface,
-    marginRight: 8,
-  },
-  filterChipActive: {
-    backgroundColor: '#F5C518',
-  },
-  filterChipText: {
-    color: COLORS.text,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  filterChipTextActive: {
-    color: '#000',
-  },
-
-  // Markers
-  restaurantMarker: {
-    backgroundColor: '#F5C518',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  eventMarker: {
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  eventMarkerToday: {
-    borderWidth: 3,
-    borderColor: '#FF6B35',
-  },
-  pulseRing: {
-    position: 'absolute',
-    borderWidth: 2,
-    borderColor: '#F5C518',
-    backgroundColor: 'transparent',
-  },
-  eventBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#FF6B35',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // Bottom sheet
-  bottomSheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: SHEET_HEIGHT,
-    backgroundColor: COLORS.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 20,
-  },
-  sheetContent: {
-    flex: 1,
-    padding: 20,
-  },
-  sheetHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.textMuted,
-    alignSelf: 'center',
-    marginBottom: 12,
-  },
-  sheetClose: {
-    position: 'absolute',
-    top: 12,
-    right: 16,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sheetCloseText: {
-    color: '#fff',
-    fontSize: 20,
-    lineHeight: 22,
-  },
-  sheetTitle: {
-    color: '#fff',
-    fontSize: 20,
+    fontSize: 12,
     fontWeight: '700',
-    marginBottom: 4,
-  },
-  sheetSubtitle: {
-    color: COLORS.textMuted,
-    fontSize: 14,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginTop: 16,
     marginBottom: 12,
   },
-  sheetRow: {
-    flexDirection: 'row',
-    gap: 8,
+  emptyText: { color: COLORS.textMuted, fontSize: 14, textAlign: 'center', marginTop: 40 },
+
+  // Card
+  card: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    padding: 16,
     marginBottom: 12,
-    flexWrap: 'wrap',
   },
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12, gap: 12 },
+  cardEmoji: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#F5C51822',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardEmojiEvent: { backgroundColor: '#9C6ADE22' },
+  cardEmojiText: { fontSize: 24 },
+  cardHeaderInfo: { flex: 1 },
+  cardName: { color: '#fff', fontSize: 16, fontWeight: '700', marginBottom: 2 },
+  cardCuisine: { color: COLORS.textMuted, fontSize: 13 },
+
+  // Badges
+  cardBadgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
   distanceBadge: {
     backgroundColor: COLORS.background,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 10,
   },
-  distanceBadgeText: {
-    color: COLORS.textMuted,
-    fontSize: 13,
-  },
-  xaumBadge: {
-    backgroundColor: '#F5C51833',
+  distanceBadgeText: { color: COLORS.textMuted, fontSize: 12 },
+  stakedBadge: {
+    backgroundColor: '#F5C51811',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 10,
   },
-  xaumBadgeText: {
-    color: '#F5C518',
-    fontSize: 13,
-    fontWeight: '600',
+  stakedBadgeText: { color: '#F5C518', fontSize: 12, fontWeight: '600' },
+  multiplierBadge: {
+    backgroundColor: COLORS.background,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
   },
-  goldBadge: {
+  multiplierBadgeGold: {
     backgroundColor: '#F5C518',
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingVertical: 5,
+    borderRadius: 10,
   },
-  goldBadgeText: {
-    color: '#000',
-    fontSize: 13,
-    fontWeight: '700',
-  },
+  multiplierText: { color: COLORS.textMuted, fontSize: 12, fontWeight: '700' },
+  multiplierTextGold: { color: '#000', fontSize: 12, fontWeight: '800' },
   todayBadge: {
     backgroundColor: '#FF6B35',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 10,
   },
-  todayBadgeText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '700',
-  },
+  todayBadgeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+
+  // Special
   specialBox: {
     backgroundColor: COLORS.background,
     borderRadius: 10,
     padding: 12,
     marginBottom: 12,
   },
-  specialLabel: {
-    color: '#F5C518',
-    fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  specialText: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  sheetButtons: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 'auto',
-  },
+  specialLabel: { color: '#F5C518', fontSize: 10, fontWeight: '800', letterSpacing: 1, marginBottom: 4 },
+  specialText: { color: '#fff', fontSize: 13 },
+
+  // Buttons
+  cardButtons: { flexDirection: 'row', gap: 8, marginTop: 4 },
   btnPrimary: {
     flex: 1,
     backgroundColor: COLORS.primary,
@@ -792,11 +566,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
   },
-  btnPrimaryText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
-  },
+  btnPrimaryText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   btnOutline: {
     flex: 1,
     borderWidth: 1,
@@ -805,40 +575,25 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
   },
-  btnOutlineText: {
-    color: COLORS.primary,
-    fontWeight: '700',
-    fontSize: 14,
+  btnOutlineText: { color: COLORS.primary, fontWeight: '700', fontSize: 14 },
+
+  // Filter chips
+  filterScrollContainer: { maxHeight: 52 },
+  filterScrollContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    marginRight: 8,
   },
-  rsvpCount: {
-    color: COLORS.textMuted,
-    fontSize: 13,
-    marginBottom: 4,
-  },
-  ticketText: {
-    color: '#F5C518',
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
+  filterChipActive: { backgroundColor: '#F5C518' },
+  filterChipText: { color: COLORS.text, fontSize: 13, fontWeight: '600' },
+  filterChipTextActive: { color: '#000' },
 
   // Leaderboard
-  leaderContainer: {
-    flex: 1,
-    padding: 16,
-  },
-  leaderTitle: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: '800',
-    marginBottom: 4,
-  },
-  leaderPrize: {
-    color: '#F5C518',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
+  leaderTitle: { color: '#fff', fontSize: 22, fontWeight: '800', marginBottom: 4, marginTop: 16 },
+  leaderPrize: { color: '#F5C518', fontSize: 13, fontWeight: '600', marginBottom: 16 },
   myRankBanner: {
     borderWidth: 2,
     borderColor: '#F5C518',
@@ -847,16 +602,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     backgroundColor: '#F5C51811',
   },
-  myRankText: {
-    color: '#F5C518',
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  countdownText: {
-    color: COLORS.textMuted,
-    fontSize: 13,
-  },
+  myRankText: { color: '#F5C518', fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  countdownText: { color: COLORS.textMuted, fontSize: 13 },
   leaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -867,41 +614,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     gap: 8,
   },
-  leaderRowMe: {
-    backgroundColor: '#F5C51822',
-    borderWidth: 1,
-    borderColor: '#F5C518',
-  },
-  leaderRank: {
-    color: COLORS.textMuted,
-    fontSize: 14,
-    fontWeight: '700',
-    minWidth: 32,
-  },
-  leaderRankTop: {
-    color: '#F5C518',
-  },
-  leaderMedal: {
-    fontSize: 18,
-    width: 24,
-    textAlign: 'center',
-  },
-  leaderName: {
-    flex: 1,
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  leaderNameMe: {
-    fontWeight: '800',
-  },
-  leaderXaum: {
-    color: COLORS.textMuted,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  leaderXaumMe: {
-    color: '#F5C518',
-    fontWeight: '800',
-  },
+  leaderRowMe: { backgroundColor: '#F5C51822', borderWidth: 1, borderColor: '#F5C518' },
+  leaderRank: { color: COLORS.textMuted, fontSize: 14, fontWeight: '700', minWidth: 32 },
+  leaderRankTop: { color: '#F5C518' },
+  leaderMedal: { fontSize: 18, width: 24, textAlign: 'center' },
+  leaderName: { flex: 1, color: '#fff', fontSize: 14, fontWeight: '500' },
+  leaderNameMe: { fontWeight: '800' },
+  leaderXaum: { color: COLORS.textMuted, fontSize: 13, fontWeight: '600' },
+  leaderXaumMe: { color: '#F5C518', fontWeight: '800' },
 });
